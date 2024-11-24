@@ -396,3 +396,153 @@ public IActionResult Test()
 ---
 
 Remember: Security of sensitive data is crucial. Always use appropriate security measures for your application's environment and requirements.
+
+
+# JWT Configuration in ASP.NET Core
+
+## Overview
+When implementing JWT authentication, it's crucial to manage sensitive configuration data securely. This guide explains how to move JWT settings from hardcoded values to configuration files.
+
+## Configuration Structure
+
+### appsettings.json
+```json
+{
+  "Jwt": {
+    "Key": "",  // Keep empty in source control
+    "Issuer": "SurveyBasketApp",
+    "Audience": "SurveyBasketApp users",
+    "ExpiryMinutes": "30"
+  }
+}
+```
+
+### secrets.json (Development)
+```json
+{
+  "Jwt:Key": "J7MfAb4WcAIMkkigVtIepIILOVJEjAcB"
+}
+```
+
+## Implementation
+
+### Before (Hardcoded Values)
+```csharp
+private static IServiceCollection AddAuthConfig(this IServiceCollection services)
+{
+    services.AddAuthentication(/*...*/)
+        .AddJwtBearer(o =>
+        {
+            o.TokenValidationParameters = new TokenValidationParameters
+            {
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes("J7MfAb4WcAIMkkigVtIepIILOVJEjAcB")),
+                ValidIssuer = "SurveyBasketApp",
+                ValidAudience = "SurveyBasketApp users",
+                // ... other parameters
+            };
+        });
+}
+```
+
+### After (Configuration-based)
+```csharp
+private static IServiceCollection AddAuthConfig(
+    this IServiceCollection services, 
+    IConfiguration configuration)
+{
+    services.AddSingleton<IJwtProvider, JwtProvider>();
+    
+    services.AddIdentity<ApplicationUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>();
+
+    services.AddAuthentication(options => 
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(o =>
+    {
+        o.SaveToken = true;
+        o.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!)),
+            ValidIssuer = configuration["Jwt:Issuer"],
+            ValidAudience = configuration["Jwt:Audience"]
+        };
+    });
+
+    return services;
+}
+```
+
+## Security Considerations
+
+```mermaid
+graph TD
+    A[JWT Settings] --> B{Where to Store?}
+    B -->|Production| C[Environment Variables]
+    B -->|Development| D[User Secrets]
+    B -->|Non-Sensitive| E[appsettings.json]
+    
+    style C fill:#99ff99
+    style D fill:#9999ff
+    style E fill:#ffff99
+```
+
+### Sensitive Data Storage
+
+| Environment | Storage Location | Security Level |
+|-------------|-----------------|----------------|
+| Development | secrets.json | High (local only) |
+| Production | Environment Variables | High |
+| Source Control | appsettings.json (no secrets) | Safe |
+
+## Best Practices
+
+1. **Secret Management**
+   - Never commit JWT keys to source control
+   - Use different keys for different environments
+   - Rotate keys periodically
+
+2. **Configuration Structure**
+   - Organize JWT settings in a dedicated section
+   - Use strong, unique keys for each environment
+   - Keep non-sensitive defaults in appsettings.json
+
+3. **Development Workflow**
+   - Use user secrets for local development
+   - Document required JWT configuration
+   - Validate all JWT settings on startup
+
+## Setup Steps
+
+1. **Add JWT Configuration Section**
+   - Create JWT section in appsettings.json
+   - Leave sensitive values empty
+
+2. **Configure User Secrets**
+   - Right-click project → Manage User Secrets
+   - Add JWT key to secrets.json
+
+3. **Update Service Configuration**
+   - Modify AddAuthConfig to accept IConfiguration
+   - Replace hardcoded values with configuration
+   - Pass configuration in Program.cs
+
+## Common Issues and Solutions
+
+| Issue | Solution |
+|-------|----------|
+| Missing JWT Key | Validate configuration on startup |
+| Invalid Token | Double-check issuer and audience values |
+| Token Not Validated | Ensure ValidateIssuerSigningKey is true |
+
+---
+
+Remember: JWT configuration involves sensitive security settings. Always follow security best practices and never expose secrets in your source code or source control.
