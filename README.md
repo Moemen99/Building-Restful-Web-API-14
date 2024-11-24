@@ -166,19 +166,24 @@ This guide provides a comprehensive overview of ASP.NET Core configuration syste
 ## Configuration Hierarchy
 
 ```mermaid
-graph TD
-    A[Configuration Sources] --> B[Environment Variables]
-    A --> C[appsettings.{Environment}.json]
-    A --> D[appsettings.json]
-    B --> E{Priority Order}
-    C --> E
-    D --> E
-    E --> F[1. Environment Variables]
-    E --> G[2. Environment-Specific Settings]
-    E --> H[3. Base Settings]
-    style F fill:#c2f0c2
-    style G fill:#d9edf7
-    style H fill:#f5f5f5
+flowchart TB
+    subgraph Priority
+        direction TB
+        A[1. Environment Variables]
+        B[2. appsettings.Environment.json]
+        C[3. appsettings.json]
+        A --> B --> C
+    end
+
+    subgraph Sources
+        direction TB
+        D[System Variables]
+        E[Launch Settings]
+        F[Host Variables]
+        D --> A
+        E --> A
+        F --> A
+    end
 ```
 
 ## Environment Variables Sources
