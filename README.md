@@ -159,3 +159,112 @@ public class AuthController : ControllerBase
 ---
 
 This guide provides a comprehensive overview of ASP.NET Core configuration system. For more detailed information, refer to the official Microsoft documentation.
+
+
+# ASP.NET Core Environment Variables and Configuration Sources
+
+## Configuration Hierarchy
+
+```mermaid
+graph TD
+    A[Configuration Sources] --> B[Environment Variables]
+    A --> C[appsettings.{Environment}.json]
+    A --> D[appsettings.json]
+    B --> E{Priority Order}
+    C --> E
+    D --> E
+    E --> F[1. Environment Variables]
+    E --> G[2. Environment-Specific Settings]
+    E --> H[3. Base Settings]
+    style F fill:#c2f0c2
+    style G fill:#d9edf7
+    style H fill:#f5f5f5
+```
+
+## Environment Variables Sources
+
+| Source | Purpose | Deployment Stage |
+|--------|---------|-----------------|
+| launchSettings.json | Development environment settings | Development only |
+| System Environment Variables | Machine-level settings | All environments |
+| Host Environment Variables | Hosting platform settings | Production |
+
+## Accessing Environment Variables
+
+### Example Controller Endpoint
+```csharp
+[HttpGet("Test")]
+public IActionResult Test()
+{
+    var config = new 
+    {
+        MyKey = _configuration["ConnectionStrings:DefaultConnection"],
+        LogLevel = _configuration["Logging:LogLevel:Default"],
+        Env = _configuration["ASPNETCORE_ENVIRONMENT"],
+        OneDrive = _configuration["OneDrive"]  // System environment variable
+    };
+    return Ok(config);
+}
+```
+
+## Configuration Value Resolution
+
+1. **System Environment Variables**
+   - Highest priority
+   - Set through Windows System Properties or server configuration
+   - Persists across application restarts
+   - Example: `OneDrive`, `PATH`, etc.
+
+2. **Launch Settings Environment Variables**
+   - Located in `Properties/launchSettings.json`
+   - Only available during development
+   - Not included in production deployment
+   - Example: `ASPNETCORE_ENVIRONMENT`
+
+3. **appsettings.{Environment}.json**
+   - Environment-specific settings
+   - Overrides base settings
+   - Example: `appsettings.Development.json`
+
+4. **appsettings.json**
+   - Base configuration
+   - Lowest priority
+   - Default values for all environments
+
+## Important Notes
+
+- Environment variables take precedence over JSON configuration files
+- System environment variables require machine restart to take effect
+- Launch settings are development-only and not deployed
+- Production environments should use system/host environment variables for sensitive data
+- Multiple sources can contain the same key, but higher priority sources override lower ones
+
+## Example Value Resolution
+
+| Key | Source | Priority | Value |
+|-----|---------|----------|--------|
+| ASPNETCORE_ENVIRONMENT | Environment Variable | 1 | "Development" |
+| ASPNETCORE_ENVIRONMENT | appsettings.Development.json | 2 | "Development From AppSettings.Dev" |
+| ASPNETCORE_ENVIRONMENT | appsettings.json | 3 | "Development From AppSettings" |
+
+In this case, the value from the environment variable would be used.
+
+## Best Practices
+
+1. **Development Environment**
+   - Use `launchSettings.json` for development-specific variables
+   - Keep sensitive data in user secrets
+
+2. **Production Environment**
+   - Use system/host environment variables for sensitive data
+   - Avoid storing sensitive information in appsettings files
+   - Configure environment variables through deployment platform
+
+3. **Configuration Management**
+   - Document all required environment variables
+   - Use meaningful naming conventions
+   - Keep configuration sources organized and minimal
+
+---
+
+Remember that the configuration system is hierarchical and flexible, allowing you to override settings based on your environment needs while maintaining security best practices.
