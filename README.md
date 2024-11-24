@@ -282,7 +282,7 @@ Remember that the configuration system is hierarchical and flexible, allowing yo
 ```mermaid
 flowchart TB
     A[Environment Variables] --> B[User Secrets]
-    B --> C[appsettings.{Environment}.json]
+    B --> C[appsettings.Environment.json]
     C --> D[appsettings.json]
     
     style A fill:#ff9999
