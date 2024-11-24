@@ -169,9 +169,9 @@ This guide provides a comprehensive overview of ASP.NET Core configuration syste
 flowchart TB
     subgraph Priority
         direction TB
-        A[1. Environment Variables]
-        B[2. appsettings.Environment.json]
-        C[3. appsettings.json]
+        A[high Environment Variables]
+        B[medium appsettings.Environment.json]
+        C[low appsettings.json]
         A --> B --> C
     end
 
