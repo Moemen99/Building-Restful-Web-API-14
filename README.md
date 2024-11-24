@@ -273,3 +273,126 @@ In this case, the value from the environment variable would be used.
 ---
 
 Remember that the configuration system is hierarchical and flexible, allowing you to override settings based on your environment needs while maintaining security best practices.
+
+
+
+# ASP.NET Core User Secrets and Secure Configuration
+
+## Configuration Priority (Highest to Lowest)
+```mermaid
+flowchart TB
+    A[Environment Variables] --> B[User Secrets]
+    B --> C[appsettings.{Environment}.json]
+    C --> D[appsettings.json]
+    
+    style A fill:#ff9999
+    style B fill:#9999ff
+    style C fill:#99ff99
+    style D fill:#ffff99
+```
+
+## User Secrets Overview
+
+### What are User Secrets?
+- Development-only configuration system
+- Stores sensitive data outside of project tree
+- Not included in source control
+- Only available during local development
+
+### Key Features
+| Feature | Description |
+|---------|-------------|
+| Location | Outside project directory |
+| Source Control | Not tracked |
+| Deployment | Not included in publish |
+| Usage | Development environment only |
+| File Format | JSON (secrets.json) |
+
+## Setting Up User Secrets
+
+1. **Enable User Secrets**
+   - Right-click project in Solution Explorer
+   - Select "Manage User Secrets"
+   - Creates secrets.json file
+   - Adds UserSecretsId to .csproj:
+   ```xml
+   <UserSecretsId>guid-here</UserSecretsId>
+   ```
+
+2. **secrets.json Structure**
+   ```json
+   {
+     "MyKey": "My Value from secrets",
+     "ASPNETCORE_ENVIRONMENT": "Development From secrets"
+   }
+   ```
+
+## Security Considerations
+
+### Development
+| Storage Method | Use Case | Security Level |
+|---------------|----------|----------------|
+| User Secrets | Sensitive data during development | High (local only) |
+| launchSettings.json | Development environment settings | Low (can be committed) |
+
+### Production
+| Storage Method | Use Case | Security Level |
+|---------------|----------|----------------|
+| Environment Variables | Sensitive production data | High |
+| App Settings | Non-sensitive configuration | Medium |
+
+## Best Practices
+
+1. **Source Control Safety**
+   - Never commit sensitive data to source control
+   - Use .gitignore to exclude sensitive files
+   - Keep secrets.json isolated from project directory
+
+2. **Production Security**
+   - Use environment variables for sensitive production data
+   - Configure secrets through hosting platform
+   - Validate security settings before deployment
+
+3. **Development Workflow**
+   - Use user secrets for local development
+   - Document required secrets in README
+   - Share secrets securely with team members
+
+## Example Configuration Access
+
+```csharp
+[HttpGet("Test")]
+public IActionResult Test()
+{
+    var config = new 
+    {
+        // Will read based on priority:
+        // 1. Environment Variables
+        // 2. User Secrets
+        // 3. appsettings.{Environment}.json
+        // 4. appsettings.json
+        MyKey = _configuration["MyKey"],
+        Environment = _configuration["ASPNETCORE_ENVIRONMENT"]
+    };
+    return Ok(config);
+}
+```
+
+## Configuration Sources Summary
+
+| Source | Priority | Development | Production | Source Control |
+|--------|----------|-------------|------------|----------------|
+| Environment Variables | 1 | ✓ | ✓ | ✗ |
+| User Secrets | 2 | ✓ | ✗ | ✗ |
+| appsettings.{Environment}.json | 3 | ✓ | ✓ | ✓ |
+| appsettings.json | 4 | ✓ | ✓ | ✓ |
+
+## Important Notes
+- User secrets are for development only
+- Production environments should use secure configuration methods
+- Different hosting platforms may provide their own secrets management
+- Regular security audits of configuration sources is recommended
+
+---
+
+Remember: Security of sensitive data is crucial. Always use appropriate security measures for your application's environment and requirements.
